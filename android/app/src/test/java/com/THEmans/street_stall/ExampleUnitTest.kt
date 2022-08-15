@@ -1,4 +1,4 @@
-package com.THEmans.street_stall
+package com.themans.street_stall
 
 import org.junit.Test
 
