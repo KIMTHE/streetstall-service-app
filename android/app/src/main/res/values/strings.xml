@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">street_stall</string>
+
+
+
+
+
+<!--    contentDescription 문자열-->
+    <string name="desc_logo">로고</string>
+    <string name="desc_kakao_login">카카오 로그인</string>
 </resources>
