@@ -10,10 +10,9 @@ import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.common.model.KakaoSdkError
 import com.kakao.sdk.user.UserApiClient
 import com.themans.street_stall.model.LoginRequest
+import com.themans.street_stall.model.UserInfo
 import com.themans.street_stall.network.StreetStallApi
 import kotlinx.coroutines.launch
-
-enum class UserType { GUEST, STALL, MANAGER }
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -21,25 +20,29 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         private const val TAG = "LoginViewModel"
     }
 
-    private val _userState = MutableLiveData<UserType>()
-    val state: LiveData<UserType> = _userState
+    private val _userInfo = MutableLiveData<UserInfo>()
+    val userInfo: LiveData<UserInfo> = _userInfo
+
 
     init {
         checkLogin()
     }
 
-    private fun register() {
+    private fun tryLogin() {
         // 사용자 정보 요청 (기본)
         UserApiClient.instance.me { user, error ->
             if (error != null) {
                 Log.e(TAG, "사용자 정보 요청 실패", error)
+                //TODO 재 로그인 시도 띄우기
+
             } else if (user != null) {
                 Log.i(
-                    TAG, "사용자 정보 요청 성공" +
-                            "\n회원번호: ${user.id}" +
-                            "\n닉네임: ${user.kakaoAccount?.profile?.nickname}"
+                    TAG,
+                    "사용자 정보 요청 성공" + "\n회원번호: ${user.id}" + "\n닉네임: ${user.kakaoAccount?.profile?.nickname}"
                 )
-                //회원가입 rest api 호출
+
+                getUserInfo(user.id.toString(), user.kakaoAccount?.profile?.nickname ?: "닉네임")
+
             }
         }
 
@@ -53,10 +56,11 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                         //로그인 필요
                     } else {
                         //기타 에러
+                        Log.e(TAG, "토큰 접근 실패", error)
                     }
                 } else {
                     //토큰 유효성 체크 성공(필요 시 토큰 갱신됨)
-                    //다음화면으로 이동
+                    tryLogin()
                 }
             }
         } else {
@@ -74,7 +78,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             } else if (token != null) {
                 Log.i(TAG, "카카오계정으로 로그인 성공 ${token.accessToken}")
 
-                register()
+                tryLogin()
             }
         }
 
@@ -92,12 +96,12 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
                     // 카카오톡에 연결된 카카오계정이 없는 경우, 카카오계정으로 로그인 시도
                     UserApiClient.instance.loginWithKakaoAccount(
-                        getApplication(),
-                        callback = callback
+                        getApplication(), callback = callback
                     )
 
                 } else if (token != null) {
                     Log.i(TAG, "카카오톡으로 로그인 성공 ${token.accessToken}")
+                    tryLogin()
                 }
             }
         } else {
@@ -105,62 +109,20 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun logout() { //설정화면에서 사용
-        // 로그아웃
-        // 사용자 액세스 토큰과 리프레시 토큰을 모두 만료시켜,
-        // 더 이상 해당 사용자 정보로 카카오 API를 호출할 수 없도록 합니다.
-        UserApiClient.instance.logout { error ->
-            if (error != null) {
-                Log.e(TAG, "로그아웃 실패. SDK에서 토큰 삭제됨", error)
-            } else {
-                Log.i(TAG, "로그아웃 성공. SDK에서 토큰 삭제됨")
-                //로그인 화면으로 이동
-            }
-        }
-    }
-
-    fun userWithdraw() { //설정화면에서 사용
-        // 회원탈퇴
-        // 사용자의 카카오계정을 삭제합니다.
-        // 사용자의 액세스 토큰과 리프레시 토큰을 모두 만료시켜,
-        // 더 이상 해당 사용자 정보로 카카오 API를 호출할 수 없도록 합니다.
-        UserApiClient.instance.unlink { error ->
-            if (error != null) {
-                Log.e(TAG, "회원탈퇴 실패", error)
-            } else {
-                Log.i(TAG, "회원탈퇴 성공. SDK에서 토큰 삭제됨")
-                //회원정보 삭제 rest api 호출
-                //로그인 화면으로 이동
-            }
-        }
-
-    }
-
-
     /**
-     * Gets Mars photos information from the Mars API Retrofit service and updates the
-     * [MarsPhoto] [List] [LiveData].
+     * 로그인을 시도하고 유저 정보를 받음
+     * [UserType] [LiveData].
      */
-    private fun getUser() {
-        viewModelScope.launch {
-            try {
-                StreetStallApi.retrofitService.userLogin(LoginRequest("tlarccdf", "abc1234"))
-                    .toString()
-            } catch (e: Exception) {
-            }
+    private fun getUserInfo(id: String, nickname: String) = viewModelScope.launch {
+        try {
+            _userInfo.value =
+                StreetStallApi.retrofitService.userLogin(LoginRequest(id, nickname))
+
+        } catch (e: Exception) {
+            Log.e(TAG, "getUserInfo: $e")
+            //TODO 재 로그인 시도 띄우기
         }
     }
 
-//    private fun getMarsPhotos() {
-//        viewModelScope.launch {
-//            _status.value = MarsApiStatus.LOADING
-//            try {
-//                _photos.value = MarsApi.retrofitService.getPhotos()
-//                _status.value = MarsApiStatus.DONE
-//            } catch (e: Exception) {
-//                _status.value = MarsApiStatus.ERROR
-//                _photos.value = listOf()
-//            }
-//        }
-//    }
+
 }

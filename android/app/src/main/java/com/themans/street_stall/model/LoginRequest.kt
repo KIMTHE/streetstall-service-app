@@ -1,6 +1,8 @@
 package com.themans.street_stall.model
 
+import com.squareup.moshi.Json
+
 data class LoginRequest(
-    val id: String,
-    val password: String
+    @field:Json(name="userid") val id: String,
+    @field:Json(name="nickname") val nickname: String
 )
