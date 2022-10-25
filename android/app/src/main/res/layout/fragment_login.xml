@@ -9,6 +9,9 @@
         <variable
             name="viewModel"
             type="com.themans.street_stall.ui.login.LoginViewModel" />
+        <variable
+            name="view"
+            type="com.themans.street_stall.ui.login.LoginFragment" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -31,7 +34,7 @@
             app:layout_constraintTop_toBottomOf="@id/img_logo"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:onClick="@{() -> viewModel.loginWithKakao()}"
+            android:onClick="@{() -> view.loginWithKakao()}"
             android:contentDescription="@string/desc_kakao_login"
             android:background="@drawable/kakao_login_medium_wide" />
 
